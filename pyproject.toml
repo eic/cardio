@@ -1,0 +1,12 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cardio"
+version = "0.0.0"
+description = "Lightweight tool for interfacing with x-cards"
+readme = "README.md"
+authors = [
+  { name = "Derek Anderson", email = "derek.murphy.anderson@protonmail.com" },
+]
