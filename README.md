@@ -1,6 +1,6 @@
 # Card I/O
 
-** :construction: Currently under construction! Come back soon! :construction: **
+:construction: **Currently under construction! Come back soon!** :construction:
 
 Card I/O (stylized as cardio) is a lightweight python module for interfacing with
 data cards, code cards, and more.
