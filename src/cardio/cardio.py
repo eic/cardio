@@ -1,6 +1,6 @@
-"""cardio -- example datacard processing
+"""cardio -- example data card processing
 
-A simple module to facilitate processing datacards
+A simple module to facilitate processing data cards
 during a snakemake workflow.
 
 Attributes:
@@ -10,10 +10,10 @@ Attributes:
     CodeDumper (class): custom yaml dumper
         for codeblocks
     Card (class): wrapper class to hold and access
-        data from loaded datacard
+        data from loaded data card
     load_card (function): instantiate a Card
-        object from datacard at provided path
-    make_card (function): create a datacard
+        object from data card at provided path
+    make_card (function): create a data card
         based on a provided template and
         instantiate Card object from it
 """
@@ -48,7 +48,7 @@ class Card:
     from an input data card
 
     Attributes:
-        data: data from the datacard
+        data: data from the data card
         code_keywords: keywords identifying
             codeblocks in card data
 
@@ -89,12 +89,12 @@ class Card:
 
     def create(self, name: str, area: str = None) -> None:
         """
-        Create a datacard at 'name' and dump
+        Create a data card at 'name' and dump
         data to it. Can override 'location'
         entry with 'area' argument.
 
         Arguments:
-            name: path to datacard
+            name: path to data card
             area: (optional) path to override
                   'location' entry with
         """
@@ -209,14 +209,14 @@ class Card:
                           block
         """
         if 'workflow' in self.data:
-            RuntimeError("Workflow already present in card data! Have you accidentally loaded a card before scraping?")
+            RuntimeError("Workflow already present in card data! Will not overwrite existing data")
         else:
             with open(Path(snake_file), 'r', encoding='utf-8') as snake:
                 self.data['workflow'] = snake.read()
 
         if config_file != None:
             if 'configuration' in self.data:
-                RuntimeError("Configuration already present in card data! Have you accidentally loaded a card before scraping?")
+                RuntimeError("Configuration already present in card data! Will not overwrite existing data")
             else:
                 with open(Path(config_file), 'r') as config:
                     self.data['configuration'] = config.read()
@@ -232,7 +232,7 @@ class Card:
 
 def load_card(path: str) -> Card:
     """
-    Load a datacard at 'path'.
+    Load a data card at 'path'.
 
     Arguments:
         path: path to the card to load
@@ -242,7 +242,7 @@ def load_card(path: str) -> Card:
 
 def make_card(path: str, temp: str, area: str = None) -> Card:
     """
-    Make a datacard at 'path' based
+    Make a data card at 'path' based
     on template at 'temp'. Can override
     'location' in card with 'area'.
 
