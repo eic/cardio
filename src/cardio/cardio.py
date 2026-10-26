@@ -72,12 +72,20 @@ class Card:
         if path is not None:
             with open(Path(path), 'r') as card:
                 self.data = yaml.safe_load(card)
+        else:
+            self.data = {}
 
     def __getitem__(self, key: str) -> Any:
         """
         Get card data at 'key'.
         """
         return self.data[key]
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        """
+        Set card data at 'key'.
+        """
+        self.data[key] = value
 
     def create(self, name: str, area: str = None) -> None:
         """
@@ -104,7 +112,9 @@ class Card:
                 card_data['files'].append(str(content))
 
         # make sure full path of input card is resolved
-        self._resolve_input()
+        # if provided
+        if 'input' in self.data:
+            self._resolve_input()
 
         # sort data into code and non-code
         # (code needs forced literal blocks)
@@ -183,6 +193,33 @@ class Card:
         Load and return input card data.
         """
         return Card(self.data["input"])
+
+    def scrape_snakefile(self, snake_file: str, config_file: str = None) -> None:
+        """
+        Scrape code from a Snakefile and (optionally)
+        a config file, and store in card data.
+
+        Arguments:
+            snake_file:  name of Snakefile to scrape
+            config_file: (optional) name of config file to scrape
+
+        Raises:
+            RuntimeError: if card data already holds
+                          'workflow' or 'configuration'
+                          block
+        """
+        if 'workflow' in self.data:
+            RuntimeError("Workflow already present in card data! Have you accidentally loaded a card before scraping?")
+        else:
+            with open(Path(snake_file), 'r', encoding='utf-8') as snake:
+                self.data['workflow'] = snake.read()
+
+        if config_file != None:
+            if 'configuration' in self.data:
+                RuntimeError("Configuration already present in card data! Have you accidentally loaded a card before scraping?")
+            else:
+                with open(Path(config_file), 'r') as config:
+                    self.data['configuration'] = config.read()
 
     def _resolve_input(self) -> None:
         """
