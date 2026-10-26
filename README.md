@@ -5,7 +5,7 @@
 Card I/O (stylized as cardio) is a lightweight python module for interfacing with
 data cards, code cards, and more.
 
-### Usage
+### Basic Usage
 
 Cardio can be used interactively in REPL:
 ```python
@@ -21,3 +21,20 @@ Cardio can be used interactively in REPL:
 
 Or in a python script or Snakefile. For a demonstration, see this 
 [repository](https://github.com/eic/ReusableAnalysisDemonstrator).
+
+### Snakefile Scraping
+
+Cardio has built-in function to scrape a provided Snakefile and corresponding
+config file.  This will load the contents of the file as strings into the
+card data, which can then be dumped to an output card.  For example:
+```python
+>>> import cardio
+>>> card = cardio.Card()
+>>> card.scrape_snakefile('my_snakefile.smk', 'my_config.yml')
+>>> card['location'] = 'out'
+>>> card.create('out/out.yml')
+```
+
+Note that **no** processing is done when loading the contents of the file.
+Please be aware of any hardcoded paths or local environments in your
+snakemake files when using this functionality.
