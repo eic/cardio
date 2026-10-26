@@ -19,5 +19,5 @@ Cardio can be used interactively in REPL:
 './out'
 ```
 
-Or in a python script or Snakefile. For a demonstration, this 
+Or in a python script or Snakefile. For a demonstration, see this 
 [repository](https://github.com/eic/ReusableAnalysisDemonstrator).
