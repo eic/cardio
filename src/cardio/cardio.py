@@ -324,7 +324,7 @@ def store_plot_metadata(
     connection = mysql.connector.connect(
         host=os.environ.get("HYDRA_DB_HOST", "localhost"),
         user=os.environ.get("HYDRA_DB_USER", "YOUR_USERNAME"),
-        database=os.environ.get("HYDRA_DB_DATABASE", "GlueX_Hydra"),
+        database=os.environ.get("HYDRA_DB_DATABASE", "ePIC_Hydra"),
     )
     cursor = None
     try:
