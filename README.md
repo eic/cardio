@@ -38,3 +38,42 @@ card data, which can then be dumped to an output card.  For example:
 Note that **no** processing is done when loading the contents of the file.
 Please be aware of any hardcoded paths or local environments in your
 snakemake files when using this functionality.
+
+### Hydra plot metadata
+
+After generating a plot and its data card, `store_plot_metadata` can add a
+row to Hydra's `Plots` table. It finds the foreign key by matching the
+provided name against `Plot_Types.Name`, stores the configured image directory
+in `Plots.RunPeriod`, and stores the card data as UTF-8 YAML bytes in
+`Plots.MetaData`:
+
+```python
+import cardio
+
+card = cardio.load_card("out/output.yml")
+plot_id = cardio.store_plot_metadata(
+    card,
+    "EXISTING_PLOT_TYPE_NAME",
+)
+```
+
+The `plot_type_name` must match an existing `Plot_Types.Name`; that entry
+already identifies the image name used by the frontend. `RunPeriod` defaults
+to `/work/eic3/validation/images/campaigns/`, which the frontend can combine
+with the plot type's image name to reconstruct the path. Cardio determines the
+campaign from a `campaign` field or a `YY.MM.R` value in the card's
+`identifier`; for generated cards, it also follows the linked `input` card.
+For example, `26.05.0` becomes `26050` in `Plots.RunNumber`. Pass a different
+`run_period` value to override the directory. If no campaign can be found,
+the function raises `ValueError` rather than inserting a row with an
+incomplete campaign.
+
+The plot type name must match exactly one existing row. Database settings are
+loaded from `cardio/.env` (`.env.example` contains placeholders); replace the
+placeholder values with your local credentials. The `.env` file is ignored by
+Git. You can instead set `HYDRA_DB_ENV_FILE` to use a different file, or set
+the variables directly in the environment. Directly exported variables take
+precedence over values in the file. The connection uses the MySQL driver's
+default port and an empty password. The function inserts `Plot_Types_ID`,
+`RunPeriod`, `RunNumber`, and `MetaData`; other `Plots` columns retain their
+database defaults or NULL values.

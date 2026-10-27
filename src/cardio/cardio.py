@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Dict
 import datetime
 import os
+import re
 import yaml
 
 
@@ -254,3 +255,100 @@ def make_card(path: str, temp: str, area: str = None) -> Card:
     output = Card(temp)
     output.create(path, area)
     return Card(path)
+
+
+def _campaign_run_number(card: Card, visited: set = None) -> int:
+    """Find a campaign in the card or its linked input card and encode YYMMR."""
+    if visited is None:
+        visited = set()
+
+    campaign = card.data.get("campaign")
+    if campaign is not None:
+        match = re.fullmatch(r"(\d{2})\.(\d{2})\.(\d)", str(campaign))
+        if match is None:
+            raise ValueError(
+                f"Campaign must use YY.MM.R format; got {campaign!r}"
+            )
+        return int("".join(match.groups()))
+
+    identifier = card.data.get("identifier")
+    if isinstance(identifier, str):
+        match = re.search(r"(?<!\d)(\d{2}\.\d{2}\.\d)(?!\d)", identifier)
+        if match is not None:
+            return int(match.group(1).replace(".", ""))
+
+    input_path = card.data.get("input")
+    if isinstance(input_path, str):
+        resolved_input = Path(input_path).expanduser().resolve()
+        if resolved_input in visited:
+            raise ValueError(f"Cycle detected in input cards at {resolved_input}")
+        if resolved_input.is_file():
+            visited.add(resolved_input)
+            return _campaign_run_number(Card(str(resolved_input)), visited)
+
+    raise ValueError(
+        "Could not determine campaign from card: expected a 'campaign' field "
+        "or a YY.MM.R value in 'identifier' or its linked input card"
+    )
+
+
+def store_plot_metadata(
+    card: Card,
+    plot_type_name: str,
+    run_period: str = "/work/eic3/validation/images/campaigns/",
+) -> int:
+    """
+    Store a card's YAML data in Hydra's Plots table for a plot type.
+
+    The plot type must match exactly one row in Plot_Types.Name. The
+    frontend can use the matching Plot_Types.Name as the image name and
+    Plots.RunPeriod as its directory. The campaign is read from the card's
+    ``campaign`` field, its ``identifier``, or a linked input card, and stored
+    in Plots.RunNumber as YYMMR. Connection settings are loaded from the
+    cardio/.env file and can be overridden with HYDRA_DB_HOST, HYDRA_DB_USER,
+    and HYDRA_DB_DATABASE.
+
+    Returns the ID of the inserted Plots row.
+    """
+    run_number = _campaign_run_number(card)
+
+    import mysql.connector
+    from dotenv import load_dotenv
+
+    env_file = os.environ.get(
+        "HYDRA_DB_ENV_FILE",
+        Path(__file__).resolve().parents[2] / ".env",
+    )
+    load_dotenv(dotenv_path=env_file)
+
+    connection = mysql.connector.connect(
+        host=os.environ.get("HYDRA_DB_HOST", "localhost"),
+        user=os.environ.get("HYDRA_DB_USER", "YOUR_USERNAME"),
+        database=os.environ.get("HYDRA_DB_DATABASE", "GlueX_Hydra"),
+    )
+    cursor = None
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            "SELECT ID FROM Plot_Types WHERE Name = %s",
+            (plot_type_name,),
+        )
+        plot_type_ids = cursor.fetchall()
+        if len(plot_type_ids) != 1:
+            raise ValueError(
+                f"Expected exactly one Plot_Types row named "
+                f"{plot_type_name!r}; found {len(plot_type_ids)}"
+            )
+
+        metadata = yaml.safe_dump(card.data, sort_keys=False).encode("utf-8")
+        cursor.execute(
+            "INSERT INTO Plots (Plot_Types_ID, RunPeriod, RunNumber, MetaData) "
+            "VALUES (%s, %s, %s, %s)",
+            (plot_type_ids[0][0], run_period, run_number, metadata),
+        )
+        connection.commit()
+        return cursor.lastrowid
+    finally:
+        if cursor is not None:
+            cursor.close()
+        connection.close()

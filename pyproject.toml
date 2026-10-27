@@ -10,3 +10,8 @@ readme = "README.md"
 authors = [
   { name = "Derek Anderson", email = "derek.murphy.anderson@protonmail.com" },
 ]
+dependencies = [
+  "mysql-connector-python>=8.0",
+  "PyYAML>=6.0",
+  "python-dotenv>=1.0",
+]

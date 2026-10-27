@@ -11,5 +11,5 @@ __all__ = [
     "code_representer",
     "load_card",
     "make_card",
+    "store_plot_metadata",
 ]
-
