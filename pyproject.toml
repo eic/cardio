@@ -10,3 +10,6 @@ readme = "README.md"
 authors = [
   { name = "Derek Anderson", email = "derek.murphy.anderson@protonmail.com" },
 ]
+dependencies = [
+  "pyyaml",
+]

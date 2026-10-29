@@ -188,6 +188,35 @@ class Card:
             with open(config_name, 'w') as file:
                 file.write(f"{self.data['configuration']}")
 
+    def get_shell(self, prefix: str = "") -> None:
+        """
+        Retrieve eic-shell based on
+        container + version specified
+        in card.
+
+        Arguments:
+            prefix: file path to install shell and script to
+
+        Raises:
+            KeyError: if card has no 'eic_shell', 'container',
+                      or 'version' keys in it.
+        """
+        if "eic_shell" not in self.data:
+            raise KeyError("Key 'eic_shell' not found in card data! Please add before retrieving shell")
+
+        contain = self.data["eic_shell"]["container"]
+        version = self.data["eic_shell"]["version"]
+
+        # create args to run install script with
+        args = f"-c {contain} -v {version}"
+        if prefix != "":
+            args += f" -p {prefix}"
+
+        # retrieve and run installation
+        os.system("wget --output-document install.sh https://get.epic-eic.org --no-check-certificate")
+        os.system(f"bash install.sh {args}")
+        os.remove("install.sh")
+
     def input(self) -> None:
         """
         Load and return input card data.
