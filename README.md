@@ -38,3 +38,29 @@ card data, which can then be dumped to an output card.  For example:
 Note that **no** processing is done when loading the contents of the file.
 Please be aware of any hardcoded paths or local environments in your
 snakemake files when using this functionality.
+
+### Shell Retrieval
+
+Cardio also has a built-in function to download the shell specified
+by the following YAML block:
+```yaml
+eic_shell:
+  container: eic_xl # the name of the container you used
+  version: 26.10.0-stable # the version you used
+```
+
+For example:
+```python
+>>> import cardio
+>>> shell = {
+>>>     "container": "eic_xl",
+>>>     "version": "26.10.0-stable",
+>>> }
+>>> card = cardio.Card()
+>>> card["eic_shell"] = shell
+>>> card.get_shell("./shell")
+```
+
+This will download the `eic_xl-26.10.0-stable.sif` image, generate
+the corresponding `eic-shell` script, and place them in the directory
+`./shell`.
