@@ -19,7 +19,7 @@ Attributes:
 """
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 import datetime
 import os
 import yaml
@@ -111,10 +111,11 @@ class Card:
             if content.is_file():
                 card_data['files'].append(str(content))
 
-        # make sure full path of input card is resolved
-        # if provided
-        if 'input' in self.data:
-            self._resolve_input()
+        # make sure full path of input cards are
+        # resolved if provided
+        if 'inputs' in self.data:
+            for card in self.data['inputs']:
+                card = self._resolve_input(card)
 
         # sort data into code and non-code
         # (code needs forced literal blocks)
@@ -131,26 +132,56 @@ class Card:
             yaml.dump(noncode_data, card)
             yaml.dump(code_data, card, Dumper=CodeDumper)
 
-    def dump_files(self, name: str, protocol: str = None) -> None:
+    def dump_files(self, name: str, n_files: int = 0) -> None:
         """
-        Dump files to a list at 'name'. If
-        protocol is 'rucio', will query file
-        catalog based on `identifier`.
+        Dump files from each dataset listed on
+        card to a list at 'name'. If 'n_files'
+        is greater than 0, will only dump
+        that many files.
 
         Arguments:
-            name:     name of file to dump to
-            protocol: how to build list of files
+            name: name of file to dump to
+
+        Raises:
+            KeyError: if card has no 'datasests'
+                      block in it
         """
+        if 'datasets' not in self.data:
+            raise KeyError("Trying to dump files but datasets not found in card!")
+
+        # make sure directory exists
         dirname = os.path.dirname(name)
         if dirname != '':
             os.makedirs(dirname, exist_ok=True)
-        if protocol == "rucio":
-            rucio_did = self.data["identifier"]
-            os.system(f"rucio replica list file --protocols root --pfns --rses isopenaccess {rucio_did} > {name}")
-        else:
-            with open (Path(name), 'w') as files:
-                for file in self.data["files"]:
-                    files.write(file + "\n")
+
+        # construct end of query for any
+        # rucio datasets
+        redirect = f">> {name}"
+        if n_files > 0:
+            redirect = f"| head {n_files} " + redirect
+
+        for dataset in self.data['datasets']:
+            protocol = dataset['protocol'] if 'protocol' in dataset else "rucio"
+            match protocol:
+
+                # explicit file list: write each one
+                # to list
+                case "files":
+                    with Open (Path(name), 'a+') as files:
+                        i_file = 0
+                        for file in dataset['files']:
+                            if (n_file > 0) and (i_file < n_file_use):
+                                break
+                            else:
+                                files.write(file + "\n")
+                                i_file += 1
+
+                # default: use rucio to query file
+                # catalog
+                case _:
+                    rucio_did = dataset['identifier']
+                    rucio_do  = f"rucio replica list file --protocols root --pfns -rses isopenaccess {rucio_did} " + redirect
+                    os.system(rucio_do)
 
     def dump_rules(self, rules_name: str, config_name: str = None) -> None:
         """
@@ -171,7 +202,7 @@ class Card:
 
         # if config present, make sure config file
         # has been passed
-        has_config = "configuration" in self.data
+        has_config = 'configuration' in self.data
         if has_config and (config_name == None):
             raise RuntimeError("config present in data but no config_name provided! Please provide name to dump config to")
         elif has_config:
@@ -204,8 +235,8 @@ class Card:
         if "eic_shell" not in self.data:
             raise KeyError("Key 'eic_shell' not found in card data! Please add before retrieving shell")
 
-        contain = self.data["eic_shell"]["container"]
-        version = self.data["eic_shell"]["version"]
+        contain = self.data['eic_shell']['container']
+        version = self.data['eic_shell']['version']
 
         # create args to run install script with
         args = f"-c {contain} -v {version}"
@@ -217,11 +248,14 @@ class Card:
         os.system(f"bash install.sh {args}")
         os.remove("install.sh")
 
-    def input(self) -> None:
+    def inputs(self) -> List[Card]:
         """
-        Load and return input card data.
+        Load and return input data cards.
         """
-        return Card(self.data["input"])
+        cards = []
+        for card in self.data['inputs']:
+            cards.append(Card(card))
+        return cards
 
     def scrape_snakefile(self, snake_file: str, config_file: str = None) -> None:
         """
@@ -250,13 +284,16 @@ class Card:
                 with open(Path(config_file), 'r') as config:
                     self.data['configuration'] = config.read()
 
-    def _resolve_input(self) -> None:
+    def _resolve_input(self, card: str) -> None:
         """
         Resolve filepath to input card.
         Likely will be handled by DB
         queries in full version.
+
+        Arguments:
+            card: path to input data card
         """
-        self.data["input"] = str(Path(self.data["input"]).resolve())
+        return str(Path(card).resolve())
 
 
 def load_card(path: str) -> Card:
