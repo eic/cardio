@@ -109,7 +109,7 @@ class Card:
         card_data['datasets']  = [{'files': list(), 'protocol': 'files'}]
         for content in Path(card_data['location']).rglob("*"):
             if content.is_file():
-                card_data['datasets'][0]['files'].append(str(content))
+                card_data['datasets'][0]['files'].append(str(content.resolve()))
 
         # make sure full path of input cards are
         # resolved if provided
