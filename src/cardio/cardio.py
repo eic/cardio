@@ -106,10 +106,10 @@ class Card:
 
         # add timestamp and tabulate all files in 'location'
         card_data['timestamp'] = str(datetime.datetime.now())
-        card_data['files']     = list()
+        card_data['datasets']  = [{'files': list(), 'protocol': 'files'}]
         for content in Path(card_data['location']).rglob("*"):
             if content.is_file():
-                card_data['files'].append(str(content))
+                card_data['datasets'][0]['files'].append(str(content))
 
         # make sure full path of input cards are
         # resolved if provided
@@ -167,10 +167,10 @@ class Card:
                 # explicit file list: write each one
                 # to list
                 case "files":
-                    with Open (Path(name), 'a+') as files:
+                    with open (Path(name), 'a+') as files:
                         i_file = 0
                         for file in dataset['files']:
-                            if (n_file > 0) and (i_file < n_file_use):
+                            if (n_files > 0) and (i_file < n_files):
                                 break
                             else:
                                 files.write(file + "\n")
