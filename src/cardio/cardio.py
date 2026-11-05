@@ -158,7 +158,7 @@ class Card:
         # rucio datasets
         redirect = f">> {name}"
         if n_files > 0:
-            redirect = f"| head {n_files} " + redirect
+            redirect = f"| head -n {n_files} " + redirect
 
         for dataset in self.data['datasets']:
             protocol = dataset['protocol'] if 'protocol' in dataset else "rucio"
@@ -180,7 +180,7 @@ class Card:
                 # catalog
                 case _:
                     rucio_did = dataset['identifier']
-                    rucio_do  = f"rucio replica list file --protocols root --pfns -rses isopenaccess {rucio_did} " + redirect
+                    rucio_do  = f"rucio replica list file --protocols root --pfns --rses isopenaccess {rucio_did} " + redirect
                     os.system(rucio_do)
 
     def dump_rules(self, rules_name: str, config_name: str = None) -> None:
@@ -248,7 +248,7 @@ class Card:
         os.system(f"bash install.sh {args}")
         os.remove("install.sh")
 
-    def inputs(self) -> List[Card]:
+    def inputs(self) -> List['Card']:
         """
         Load and return input data cards.
         """
